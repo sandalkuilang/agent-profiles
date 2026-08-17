@@ -70,6 +70,34 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check whether updater signing is configured
+        id: updater_signing
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ] && [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build a plain release (no signing key configured yet)
+        if: steps.updater_signing.outputs.configured == 'false'
+        shell: bash
+        # `createUpdaterArtifacts: true` in tauri.conf.json makes `tauri build`
+        # refuse to finish at all without a private key — not skip the
+        # updater artifacts, fail the whole build, every platform, taking the
+        # ordinary unsigned .dmg/.msi/.AppImage down with it. Until the two
+        # secrets below are set, turn it back off here so a release still
+        # ships exactly as it did before automatic updates existed.
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'src-tauri/tauri.conf.json';
+            const config = JSON.parse(fs.readFileSync(path, 'utf8'));
+            config.bundle.createUpdaterArtifacts = false;
+            fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
+          "
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +107,9 @@ jobs:
           # `tauri signer generate` — and has nothing to do with the OS
           # code-signing certificates this project cannot afford; it costs
           # nothing and verifies only that an update came from this repo's own
-          # release, not from whoever controls the download.
+          # release, not from whoever controls the download. Unused (and
+          # unnecessary) when the step above already turned artifact signing
+          # off for this run.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:

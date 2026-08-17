@@ -663,11 +663,6 @@ textarea {
   outline-offset: 3px;
 }
 
-.switch input:disabled + .switch-track {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .update-status-row {
   display: flex;
   flex-wrap: wrap;

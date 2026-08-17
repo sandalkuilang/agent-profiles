@@ -122,3 +122,39 @@ pub fn spawn_periodic_checks(app: AppHandle) {
         }
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_development_build_is_never_offered_automatic_updates() {
+        // `cargo test` is always a debug build, so this is the one branch of
+        // `is_offered` a unit test can actually observe.
+        assert!(!is_offered());
+    }
+
+    /// `Outcome` crosses the Tauri IPC boundary as JSON, and the frontend
+    /// matches on `status` as a plain string discriminant — nothing enforces
+    /// that contract at compile time. A rename of a variant, or of
+    /// `rename_all`, would compile cleanly here and silently break the
+    /// status line in the General tab.
+    #[test]
+    fn the_json_shape_matches_what_the_frontend_switches_on() {
+        assert_eq!(
+            serde_json::to_string(&Outcome::NotOffered).unwrap(),
+            r#"{"status":"not_offered"}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&Outcome::UpToDate).unwrap(),
+            r#"{"status":"up_to_date"}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&Outcome::Installed {
+                version: "1.2.3".into()
+            })
+            .unwrap(),
+            r#"{"status":"installed","version":"1.2.3"}"#
+        );
+    }
+}

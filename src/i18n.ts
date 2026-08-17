@@ -71,8 +71,6 @@ const en: Dict = {
   "general.update.status.upToDate": "You're on the latest version.",
   "general.update.status.installing": "Installing version {version}… Agent Profiles will restart.",
   "general.update.status.error": "Could not check for updates: {error}",
-  "general.update.unavailable":
-    "Automatic updates are only available in an installed build, not this development build.",
 };
 
 const id: Dict = {
@@ -120,8 +118,6 @@ const id: Dict = {
   "general.update.status.upToDate": "Anda sudah menggunakan versi terbaru.",
   "general.update.status.installing": "Memasang versi {version}… Agent Profiles akan dimulai ulang.",
   "general.update.status.error": "Tidak dapat memeriksa pembaruan: {error}",
-  "general.update.unavailable":
-    "Pembaruan otomatis hanya tersedia pada build terpasang, bukan pada build pengembangan ini.",
 };
 
 const ja: Dict = {
@@ -169,8 +165,6 @@ const ja: Dict = {
   "general.update.status.upToDate": "最新バージョンです。",
   "general.update.status.installing": "バージョン {version} をインストールしています… Agent Profilesが再起動します。",
   "general.update.status.error": "アップデートを確認できませんでした: {error}",
-  "general.update.unavailable":
-    "自動アップデートはインストール済みのビルドでのみ利用でき、この開発ビルドでは利用できません。",
 };
 
 const de: Dict = {
@@ -219,8 +213,6 @@ const de: Dict = {
   "general.update.status.upToDate": "Sie verwenden die neueste Version.",
   "general.update.status.installing": "Version {version} wird installiert… Agent Profiles wird neu gestartet.",
   "general.update.status.error": "Updates konnten nicht geprüft werden: {error}",
-  "general.update.unavailable":
-    "Automatische Updates sind nur in einer installierten Version verfügbar, nicht in diesem Entwicklungs-Build.",
 };
 
 const es: Dict = {
@@ -268,8 +260,6 @@ const es: Dict = {
   "general.update.status.upToDate": "Tienes la última versión.",
   "general.update.status.installing": "Instalando la versión {version}… Agent Profiles se reiniciará.",
   "general.update.status.error": "No se pudo comprobar si hay actualizaciones: {error}",
-  "general.update.unavailable":
-    "Las actualizaciones automáticas solo están disponibles en una versión instalada, no en esta versión de desarrollo.",
 };
 
 const pt: Dict = {
@@ -317,8 +307,6 @@ const pt: Dict = {
   "general.update.status.upToDate": "Você está na versão mais recente.",
   "general.update.status.installing": "Instalando a versão {version}… O Agent Profiles será reiniciado.",
   "general.update.status.error": "Não foi possível verificar atualizações: {error}",
-  "general.update.unavailable":
-    "As atualizações automáticas estão disponíveis apenas em uma versão instalada, não nesta versão de desenvolvimento.",
 };
 
 const DICTIONARIES: Record<Locale, Dict> = { en, id, ja, de, es, pt };
@@ -345,12 +333,19 @@ export function setLocale(locale: string): void {
 /// Looks the key up in the active language, then English, then finally
 /// returns the key itself — a visibly wrong string on screen is a bug report;
 /// a blank one is just confusing.
+/// A single pass over the template, not one pass per variable. Substituting
+/// variables one at a time — replace {a}, then replace {b} in the result —
+/// means a value that happens to contain literal "{b}" text (a profile
+/// labelled exactly that) gets re-substituted on the next iteration. Profile
+/// labels are free text and reach here as `vars`, so this is a real path, not
+/// a hypothetical one.
+const PLACEHOLDER = /\{(\w+)\}/g;
+
 export function t(key: string, vars?: Record<string, string | number>): string {
   const template = DICTIONARIES[current][key] ?? en[key] ?? key;
   if (!vars) return template;
-  return Object.entries(vars).reduce(
-    (text, [name, value]) => text.split(`{${name}}`).join(String(value)),
-    template,
+  return template.replace(PLACEHOLDER, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
   );
 }
 
