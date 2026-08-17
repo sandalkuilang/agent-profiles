@@ -2,8 +2,10 @@ use crate::app_spec::{self, AppSpec};
 use crate::paths::Paths;
 use crate::platform::Platform;
 use crate::profile_store::{Profile, ProfileStore};
+use crate::settings::Settings;
 use crate::tray::MenuSignature;
 use anyhow::{anyhow, Result};
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 /// One app's live state: what it is, where its profiles live, and what they are.
@@ -19,9 +21,30 @@ pub struct AppState {
     /// What the tray menu currently shows. Replacing an attached menu closes it
     /// if it happens to be open, so we only replace it when it would differ.
     pub last_menu: Mutex<Option<Vec<MenuSignature>>>,
+    /// One level above every app's own root — where `settings.json` lives,
+    /// because language and auto-update belong to the app as a whole.
+    pub settings_root: PathBuf,
+    pub settings: Mutex<Settings>,
 }
 
 impl AppState {
+    /// Persists a change to settings, or leaves the in-memory copy untouched
+    /// if the write fails — the same "save first, and only believe it happened
+    /// if the save did" rule the profile store follows.
+    pub fn update_settings(&self, apply: impl FnOnce(&mut Settings)) -> Result<Settings> {
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| anyhow!("settings are unavailable"))?;
+        let previous = settings.clone();
+        apply(&mut settings);
+        if let Err(error) = settings.save(&self.settings_root) {
+            *settings = previous;
+            return Err(error);
+        }
+        Ok(settings.clone())
+    }
+
     pub fn app(&self, app_id: &str) -> Result<&AppRuntime> {
         self.apps
             .iter()
@@ -131,12 +154,15 @@ mod tests {
             root: root.to_path_buf(),
         };
         let apps = build(&platform).unwrap();
+        let settings_root = platform.data_root().unwrap();
         AppState {
             platform: Box::new(SandboxPlatform {
                 root: root.to_path_buf(),
             }),
             apps,
             last_menu: Mutex::new(None),
+            settings: Mutex::new(Settings::load(&settings_root)),
+            settings_root,
         }
     }
 
@@ -227,6 +253,38 @@ mod tests {
             assert_eq!(store.list().len(), 1);
             assert!(store.list()[0].is_default);
         }
+    }
+
+    #[test]
+    fn a_settings_change_survives_a_reload_from_disk() {
+        let d = tempfile::tempdir().unwrap();
+        let state = state(d.path());
+        let updated = state
+            .update_settings(|s| {
+                s.language = "ja".into();
+                s.auto_update = true;
+            })
+            .unwrap();
+        assert_eq!(updated.language, "ja");
+        assert!(updated.auto_update);
+
+        let reloaded = Settings::load(&state.settings_root);
+        assert_eq!(reloaded, updated);
+    }
+
+    #[test]
+    fn a_settings_write_that_fails_leaves_the_in_memory_copy_untouched() {
+        // Same shape as `block_the_registry` in profile_store: a directory
+        // standing where `settings.json` belongs makes the write fail without
+        // needing a full disk.
+        let d = tempfile::tempdir().unwrap();
+        let state = state(d.path());
+        std::fs::create_dir_all(state.settings_root.join("settings.json")).unwrap();
+
+        let result = state.update_settings(|s| s.auto_update = true);
+
+        assert!(result.is_err());
+        assert!(!state.settings.lock().unwrap().auto_update);
     }
 
     #[test]

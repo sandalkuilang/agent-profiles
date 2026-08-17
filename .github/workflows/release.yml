@@ -73,6 +73,15 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update artifacts `createUpdaterArtifacts` produces and
+          # writes `latest.json`, so the in-app updater can trust what it
+          # downloads. This is a signing keypair made for the updater alone —
+          # `tauri signer generate` — and has nothing to do with the OS
+          # code-signing certificates this project cannot afford; it costs
+          # nothing and verifies only that an update came from this repo's own
+          # release, not from whoever controls the download.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Agent Profiles ${{ github.ref_name }}
@@ -87,6 +96,8 @@ jobs:
             Only trust builds downloaded from this page.
 
             **Windows and Linux are unverified**: see the platform checklists in the README. Reports from those platforms are very welcome.
+
+            Installed builds can also update themselves: turn on **Automatic updates** on the General tab and they will check this repository's releases and update silently, no download required.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

@@ -249,6 +249,75 @@ pub fn set_autostart(app: tauri::AppHandle, enabled: bool) -> Result<(), String>
     }
 }
 
+#[derive(Serialize)]
+pub struct GeneralSettingsView {
+    pub language: String,
+    pub auto_update: bool,
+    /// False in development builds, mirroring `AutostartState::offered`: there
+    /// is no installed binary for the updater to replace, so the General tab
+    /// hides the switch rather than offering one that can only fail.
+    pub auto_update_offered: bool,
+}
+
+fn general_settings_view(settings: &crate::settings::Settings) -> GeneralSettingsView {
+    GeneralSettingsView {
+        language: settings.language.clone(),
+        auto_update: settings.auto_update,
+        auto_update_offered: crate::updater::is_offered(),
+    }
+}
+
+#[tauri::command]
+pub fn general_settings(state: tauri::State<AppState>) -> Result<GeneralSettingsView, String> {
+    let settings = state.settings.lock().map_err(|e| e.to_string())?;
+    Ok(general_settings_view(&settings))
+}
+
+#[tauri::command]
+pub fn set_language(
+    state: tauri::State<AppState>,
+    language: String,
+) -> Result<GeneralSettingsView, String> {
+    let normalized = crate::settings::normalize_language(&language).to_string();
+    let settings = state
+        .update_settings(|s| s.language = normalized)
+        .map_err(|e| e.to_string())?;
+    Ok(general_settings_view(&settings))
+}
+
+#[tauri::command]
+pub fn set_auto_update(
+    app: tauri::AppHandle,
+    state: tauri::State<AppState>,
+    enabled: bool,
+) -> Result<GeneralSettingsView, String> {
+    if enabled && !crate::updater::is_offered() {
+        return Err("automatic updates are only available in an installed build".into());
+    }
+    let settings = state
+        .update_settings(|s| s.auto_update = enabled)
+        .map_err(|e| e.to_string())?;
+    if enabled {
+        // Checked right away rather than left to the next periodic tick, so
+        // turning the switch on feels like it did something.
+        tauri::async_runtime::spawn(async move {
+            if let Err(error) = crate::updater::manual_check(&app).await {
+                eprintln!("auto-update check failed: {error}");
+            }
+        });
+    }
+    Ok(general_settings_view(&settings))
+}
+
+#[tauri::command]
+pub async fn check_for_updates_now(
+    app: tauri::AppHandle,
+) -> Result<crate::updater::Outcome, String> {
+    crate::updater::manual_check(&app)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn profile_size_bytes(
     state: tauri::State<AppState>,
@@ -301,6 +370,17 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let (_, store) = store_in(d.path());
         assert_eq!(to_views(&app_spec::CODEX, &store)[0].app_id, "codex");
+    }
+
+    #[test]
+    fn the_general_settings_view_mirrors_the_stored_settings() {
+        let settings = crate::settings::Settings {
+            language: "de".into(),
+            auto_update: true,
+        };
+        let view = general_settings_view(&settings);
+        assert_eq!(view.language, "de");
+        assert!(view.auto_update);
     }
 
     #[test]

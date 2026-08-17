@@ -8,8 +8,10 @@ mod platform;
 mod probe;
 mod profile_store;
 mod runtime;
+mod settings;
 mod shared_config;
 mod tray;
+mod updater;
 #[cfg(test)]
 mod verify;
 
@@ -159,6 +161,9 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
+        // Only ever driven from Rust (see `updater.rs`): nothing here is called
+        // from the frontend, so no capability entry is needed for it.
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::list_apps,
             commands::add_profile,
@@ -167,6 +172,10 @@ pub fn run() {
             commands::profile_size_bytes,
             commands::autostart_state,
             commands::set_autostart,
+            commands::general_settings,
+            commands::set_language,
+            commands::set_auto_update,
+            commands::check_for_updates_now,
         ])
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
@@ -211,16 +220,21 @@ pub fn run() {
 
             let platform = platform::current();
             let apps = runtime::build(&*platform)?;
+            let settings_root = platform.data_root()?;
+            let settings = settings::Settings::load(&settings_root);
             app.manage(AppState {
                 platform,
                 apps,
                 last_menu: std::sync::Mutex::new(None),
+                settings_root,
+                settings: std::sync::Mutex::new(settings),
             });
 
             if let Some(state) = app.try_state::<AppState>() {
                 tray::sync_identities(&state);
             }
             tray::rebuild(app.handle())?;
+            updater::spawn_periodic_checks(app.handle().clone());
             Ok(())
         })
         .build(tauri::generate_context!());

@@ -113,11 +113,64 @@ Declare an app only for the platforms someone has actually checked. Leaving a pl
 
 ## Launch at login
 
-The management window offers an opt-in **Launch at login** toggle. It is off until you turn it on, and it starts only the tray: no profile is opened for you.
+The management window's General tab offers an opt-in **Launch at login** toggle. It is off until you turn it on, and it starts only the tray: no profile is opened for you.
 
 The operating system owns this setting — a login item on macOS, a registry entry on Windows, an autostart desktop entry on Linux. Agent Profiles keeps no copy of it and reads the real value each time the window opens, so turning it off in your system settings is reflected here rather than contradicted.
 
 The toggle is hidden in development builds. A login item registered from `pnpm tauri dev` would point at a `target/debug` binary that moves, gets rebuilt, and disappears on `cargo clean`, leaving an entry that fails silently at every boot.
+
+## General tab
+
+The management window's **General** tab holds settings that belong to the app
+as a whole rather than to any one profile: interface language, Launch at
+login (moved here from its own section), and automatic updates. It writes one
+`settings.json` at the root of Agent Profiles' data directory, sibling to each
+app's own `<app>/` folder — nothing here is mirrored into any profile.
+
+### Language
+
+Agent Profiles' interface is available in **English, Bahasa Indonesia, 日本語
+(Japanese), Deutsch (German), Español (Spanish)** and **Português
+(Portuguese)**. Switching languages on the General tab takes effect
+immediately, no restart needed, and the choice is remembered in
+`settings.json`.
+
+Translated is the interface chrome: headings, buttons, labels, and the
+messages this frontend generates itself (like "Enter a label for this
+profile."). **Not** translated: profile labels and paths, which are your own
+data, and messages the Rust backend returns — like refusing a duplicate label
+or a profile whose Claude Desktop is still running. Those come from the same
+process that enforces the actual rule and are always in English today.
+
+### Automatic updates
+
+A switch, off until you turn it on — the same convention as Launch at login.
+When it is on, Agent Profiles checks this repository's GitHub releases in the
+background (roughly every six hours, and once again the first time a person
+clicks **Check for updates now**), and if a newer one has been published, it
+downloads and installs it **without asking**: no "an update is available"
+dialog, no progress window, no "restart now?" prompt. It restarts itself
+straight onto the new version once installed.
+
+This checks published releases, not drafts. A tag pushed to `v*` builds and
+attaches artifacts to a **draft** release (see below); it becomes visible to
+the updater, and to anyone browsing the Releases page, only once a maintainer
+publishes it.
+
+The switch is hidden entirely in development builds — `pnpm start` never has
+an installed binary for the updater to replace, the same reason Launch at
+login is hidden there too.
+
+Update artifacts are signed with a keypair made for the updater alone (`tauri
+signer generate`), which is unrelated to the OS code-signing certificates
+this project cannot afford. It only proves an update came from this
+repository's own release process, not from whoever happens to control the
+download — the public half lives in `src-tauri/tauri.conf.json`
+(`plugins.updater.pubkey`), and the private half is a `TAURI_SIGNING_PRIVATE_KEY`
+/ `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` pair of GitHub Actions secrets that
+`release.yml` passes to the build. Without both secrets set, tagging a
+release still builds and publishes normally; it just cannot produce artifacts
+the updater will trust, and the switch on the General tab has nothing to find.
 
 ## Platform status
 

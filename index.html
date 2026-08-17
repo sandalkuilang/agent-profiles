@@ -12,58 +12,143 @@
       <header class="page-header">
         <div class="brand-mark" aria-hidden="true"><span>ap</span></div>
         <div>
-          <p class="eyebrow">Profile cabinet</p>
+          <p class="eyebrow" data-i18n="header.eyebrow">Profile cabinet</p>
           <h1>Agent Profiles</h1>
-          <p class="lede">Keep each coding agent workspace separate and ready to open.</p>
+          <p class="lede" data-i18n="header.lede">Keep each coding agent workspace separate and ready to open.</p>
         </div>
       </header>
 
-      <section class="profiles-section" aria-labelledby="profiles-heading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Your workspaces</p>
-            <h2 id="profiles-heading">Profiles</h2>
-          </div>
-          <span id="profile-count" class="count-badge" aria-live="polite">0</span>
-        </div>
-        <div id="error" class="error" role="alert" hidden></div>
-        <div id="apps" aria-live="polite"></div>
-      </section>
+      <nav class="tab-nav" role="tablist" aria-label="Sections">
+        <button
+          type="button"
+          id="tab-profiles"
+          class="tab-button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-profiles"
+          data-i18n="tabs.profiles"
+        >
+          Profiles
+        </button>
+        <button
+          type="button"
+          id="tab-general"
+          class="tab-button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-general"
+          data-i18n="tabs.general"
+        >
+          General
+        </button>
+      </nav>
 
-      <section class="add-section" aria-labelledby="add-heading">
-        <div>
-          <p class="eyebrow">Make room for another sign-in</p>
-          <h2 id="add-heading">Add a profile</h2>
-          <p class="helper">Choose a label you will recognize. Account details stay inside the app itself.</p>
-        </div>
-        <div class="add-column">
-          <form id="add-profile-form" class="add-form">
-            <span class="app-picker" hidden>
-              <label class="sr-only" for="new-app">App</label>
-              <select id="new-app" name="app"></select>
+      <div id="panel-profiles" class="tab-panel" role="tabpanel" aria-labelledby="tab-profiles">
+        <section class="profiles-section" aria-labelledby="profiles-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow" data-i18n="profiles.eyebrow">Your workspaces</p>
+              <h2 id="profiles-heading" data-i18n="profiles.heading">Profiles</h2>
+            </div>
+            <span id="profile-count" class="count-badge" aria-live="polite">0</span>
+          </div>
+          <div id="error" class="error" role="alert" hidden></div>
+          <div id="apps" aria-live="polite"></div>
+        </section>
+
+        <section class="add-section" aria-labelledby="add-heading">
+          <div>
+            <p class="eyebrow" data-i18n="add.eyebrow">Make room for another sign-in</p>
+            <h2 id="add-heading" data-i18n="add.heading">Add a profile</h2>
+            <p class="helper" data-i18n="add.helper">
+              Choose a label you will recognize. Account details stay inside the app itself.
+            </p>
+          </div>
+          <div class="add-column">
+            <form id="add-profile-form" class="add-form">
+              <span class="app-picker" hidden>
+                <label class="sr-only" for="new-app" data-i18n="add.appLabel">App</label>
+                <select id="new-app" name="app"></select>
+              </span>
+              <label class="sr-only" for="new-label" data-i18n="add.labelLabel">Profile label</label>
+              <input
+                id="new-label"
+                name="label"
+                type="text"
+                maxlength="80"
+                autocomplete="off"
+                data-i18n-placeholder="add.labelPlaceholder"
+                placeholder="e.g. Work"
+                required
+              />
+              <button type="submit" class="button button-primary" data-i18n="add.submit">Add profile</button>
+            </form>
+            <!-- Refusals belong beside the control that caused them. This one used
+                 to render in the banner at the top of the page, far enough above
+                 the form to be off screen, so a rejected label looked like a
+                 button that did nothing. -->
+            <div id="add-error" class="error error-inline" role="alert" hidden></div>
+          </div>
+        </section>
+      </div>
+
+      <div id="panel-general" class="tab-panel" role="tabpanel" aria-labelledby="tab-general" hidden>
+        <section class="settings-section" id="language-section" aria-labelledby="language-heading">
+          <div>
+            <p class="eyebrow" data-i18n="general.language.eyebrow">Preferences</p>
+            <h2 id="language-heading" data-i18n="general.language.heading">Language</h2>
+            <p class="helper" data-i18n="general.language.helper">
+              Choose the language Agent Profiles' interface is shown in.
+            </p>
+          </div>
+          <span class="app-picker">
+            <label class="sr-only" for="language-select" data-i18n="general.language.label">Interface language</label>
+            <select id="language-select"></select>
+          </span>
+        </section>
+
+        <section class="settings-section" id="autostart-section" aria-labelledby="autostart-heading" hidden>
+          <div>
+            <p class="eyebrow" data-i18n="general.startup.eyebrow">Startup</p>
+            <h2 id="autostart-heading" data-i18n="general.startup.heading">Launch at login</h2>
+            <p class="helper" data-i18n="general.startup.helper">
+              Start Agent Profiles automatically when you sign in. This only starts the tray; no profile is opened
+              for you.
+            </p>
+          </div>
+          <label class="toggle-row switch-row">
+            <span class="switch">
+              <input id="autostart" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"></span>
             </span>
-            <label class="sr-only" for="new-label">Profile label</label>
-            <input id="new-label" name="label" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Work" required />
-            <button type="submit" class="button button-primary">Add profile</button>
-          </form>
-          <!-- Refusals belong beside the control that caused them. This one used
-               to render in the banner at the top of the page, far enough above
-               the form to be off screen, so a rejected label looked like a
-               button that did nothing. -->
-          <div id="add-error" class="error error-inline" role="alert" hidden></div>
-        </div>
-      </section>
-      <section class="settings-section" id="autostart-section" aria-labelledby="settings-heading" hidden>
-        <div>
-          <p class="eyebrow">Startup</p>
-          <h2 id="settings-heading">Launch at login</h2>
-          <p class="helper">Start Agent Profiles automatically when you sign in. This only starts the tray; no profile is opened for you.</p>
-        </div>
-        <label class="toggle-row">
-          <input id="autostart" type="checkbox" />
-          <span>Start Agent Profiles at login</span>
-        </label>
-      </section>
+            <span data-i18n="general.startup.toggle">Start Agent Profiles at login</span>
+          </label>
+        </section>
+
+        <section class="settings-section" id="auto-update-section" aria-labelledby="auto-update-heading">
+          <div>
+            <p class="eyebrow" data-i18n="general.update.eyebrow">Updates</p>
+            <h2 id="auto-update-heading" data-i18n="general.update.heading">Automatic updates</h2>
+            <p class="helper" data-i18n="general.update.helper">
+              Checks husniadil/agent-profiles on GitHub for a new release, then downloads and installs it without
+              asking — no dialogs, no prompts. Off until you turn it on.
+            </p>
+          </div>
+          <label class="toggle-row switch-row">
+            <span class="switch">
+              <input id="auto-update" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+            <span data-i18n="general.update.toggle">Automatically download and install updates</span>
+          </label>
+          <div class="update-status-row">
+            <p id="update-status" class="helper update-status" aria-live="polite"></p>
+            <button type="button" id="check-updates" class="button button-quiet" data-i18n="general.update.checkNow">
+              Check for updates now
+            </button>
+          </div>
+        </section>
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

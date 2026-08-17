@@ -562,3 +562,121 @@ textarea {
   height: 1rem;
   cursor: pointer;
 }
+
+.tab-nav {
+  display: flex;
+  gap: 0.4rem;
+  margin: 1.75rem 0 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab-button {
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.65rem 0.2rem;
+  color: var(--ink-soft);
+  background: transparent;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.tab-button + .tab-button {
+  margin-left: 1.25rem;
+}
+
+.tab-button:hover {
+  color: var(--ink);
+}
+
+.tab-button[aria-selected="true"] {
+  border-bottom-color: var(--orange);
+  color: var(--ink);
+}
+
+.tab-panel > section + section {
+  margin-top: 2.5rem;
+}
+
+/* A proper switch reads at a glance as on/off, the way a checkbox styled to
+   look like one still reads as "a box that is either ticked or not" — worth
+   the extra markup for the setting that silently downloads and installs
+   something on your machine. */
+.switch-row {
+  gap: 0.75rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 2.4rem;
+  height: 1.4rem;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-deep);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.switch-track::before {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 0.1rem 0.2rem var(--shadow);
+  transition: transform 160ms ease;
+}
+
+.switch input:checked + .switch-track {
+  border-color: var(--orange);
+  background: var(--orange);
+}
+
+.switch input:checked + .switch-track::before {
+  transform: translateX(1rem);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 3px solid rgba(221, 107, 50, 0.48);
+  outline-offset: 3px;
+}
+
+.switch input:disabled + .switch-track {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.update-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.update-status {
+  margin: 0;
+  min-height: 1.2em;
+}
